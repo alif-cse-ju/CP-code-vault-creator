@@ -16,4 +16,5 @@ EXTENSIONS = {
     'rust': 'rs',
     'scala': 'sc',
     'node': 'js',
+    'bf': 'bf',
 }
