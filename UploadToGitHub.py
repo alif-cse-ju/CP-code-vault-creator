@@ -1,5 +1,4 @@
 import logging
-from extensions import EXTENSIONS
 from github import GithubException
 
 def upload_to_github(repo, git_path, content):
@@ -15,18 +14,21 @@ def upload_to_github(repo, git_path, content):
         repo.create_file(git_path, 'Initial commit', content, branch="main")
 
 def upload_solution_type1(website, solution, repo):
-
     try:
-        lang = solution["language"].lower()
+        level2 = "Contest-Name/ID"
+        if "contest_name" in solution.keys():
+            level2 = solution["contest_name"]
+        else:
+            level2 = solution["contest_id"]
 
-        extension = 'txt'
-        for key, value in EXTENSIONS.items():
-            if key in lang:
-                extension = value
-                break
+        level3 = "Problem-Name/ID"
+        if "contest_name" in solution.keys():
+            level3 = solution["name"]
+        else:
+            level3 = solution["problem_id"]
 
-        path = f'{website}/{solution["contest_id"]}/{solution["problem_id"]}/{solution["solution_id"]}.{extension}'
-
+        
+        path = f'{website}/{level2}/{level3}/{solution["solution_id"]}.{solution["file_extension"]}'
         upload_to_github(repo, path, solution['solution'])
 
     except Exception as e:

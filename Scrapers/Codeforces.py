@@ -1,66 +1,74 @@
 import os
 import sys
-import json
 import requests
-from time import sleep
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
+from extensions import EXTENSIONS
 from UploadToGitHub import upload_solution_type1
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36',
-}
+def scrape_codeforces(problem):
+    try:
+        # Scrape problem source code
+        solution_page = requests.get(problem['url'])
+        soup = BeautifulSoup(solution_page.content, 'html.parser')
+        problem['solution'] = soup.select_one("#program-source-text").get_text()
 
-def get_submission_info(username):
-    cur = 0
+        api_url = f"https://codeforces.com/api/contest.standings?contestId={problem['contestId']}&from=1&count=1"
+        response = requests.get(api_url)
+        data = response.json()
+        contest_name = "GYM Contest"
+        contest_name = data['result']['contest']['name']
+        problem['contest_name'] = f"{contest_name}"
+        return 1
 
-    while True:
-        submissions = json.loads(requests.get(f'https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={username}&from_second={cur}').text)
-        if not submissions:
-            break
+    except Exception as error:
+        # print(f"[Error in scraping {problem['url']} from Codeforces]\t{error}")
+        return 0
+
+
+def codeforces_uploader(codeforces_username, repo):
+    failed_list = []
+    try:
+        submissions = requests.get(f"https://codeforces.com/api/user.status?handle={codeforces_username}").json()["result"]
 
         for submission in submissions:
-            if submission['result'] == 'AC':
-                try:
-                    yield {
-                        'language': submission['language'],
-                        'contest_id': submission['contest_id'],
-                        'problem_id': submission['problem_id'],
-                        'solution_id': submission['id'],
-                        'link': f'https://atcoder.jp/contests/{submission["contest_id"]}/submissions/{submission["id"]}',
-                    }
+            if submission["verdict"] != "OK":
+                continue
 
-                except KeyError:
-                    pass
+            problem = {}
+            problem['file_extension'] = "txt"
+            if submission["programmingLanguage"] in EXTENSIONS:
+                problem['file_extension'] = EXTENSIONS[submission["programmingLanguage"]]
 
-            cur = submission['epoch_second'] + 1
+            problem['name'] = f"{submission['problem']['index']} - {submission['problem']['name']}"
+            problem['solution_id'] = f"{submission['id']}"
+            problem['contest_id'] = f"{submission['contestId']}"
+            problem['url'] = f"https://codeforces.com/contest/{submission['contestId']}/submission/{submission['id']}"
 
-        sleep(1)
+            ok = scrape_codeforces(problem)
+            if ok:
+                upload_solution_type1('Codeforces', problem, repo)
+            else:
+                failed_list.append(problem)
 
-def get_code(html):
-    soup = BeautifulSoup(html, 'lxml')
-    return soup.select_one('#submission-code').text
+    except Exception as error:
+        print(error)
 
-def get_solutions(username):
-    all_info = list(get_submission_info(username))[::-1]
-    responses = map(lambda info: requests.get(info['link'], headers=headers), all_info)
-    for response, info in zip(responses, all_info):
-        code = get_code(response.text)
-        yield {
-            'language': info['language'],
-            'contest_id': info['contest_id'],
-            'problem_id': info['problem_id'],
-            'solution_id': info['solution_id'],
-            'link': info['link'],
-            'solution': code,
-        }
+
+    while len(failed_list) > 0:
+        print(len(failed_list))
+        new_failed_list = []
+        for problem in failed_list:
+            ok = scrape_codeforces(problem)
+            if ok:
+                upload_solution_type1('Codeforces', problem, repo)
+            else:
+                new_failed_list.append(problem)
+        failed_list = new_failed_list
         
-
-def atcoder_uploader(atcoder_username, repo):
-    for solution in get_solutions(atcoder_username):
-        upload_solution_type1('AtCoder', solution, repo)
         

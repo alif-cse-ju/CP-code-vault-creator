@@ -9,6 +9,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
+from extensions import EXTENSIONS
 from UploadToGitHub import upload_solution_type1
 
 headers = {
@@ -51,7 +52,7 @@ def get_solutions(username):
     for response, info in zip(responses, all_info):
         code = get_code(response.text)
         yield {
-            'language': info['language'],
+            'file_extension': EXTENSIONS[info['language']],
             'contest_id': info['contest_id'],
             'problem_id': info['problem_id'],
             'solution_id': info['solution_id'],
