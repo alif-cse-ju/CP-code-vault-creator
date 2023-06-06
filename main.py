@@ -9,7 +9,7 @@ def main():
 
 
     # Accessing github repository
-    access_token = input('GitHub access token: ') #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
+    access_token = input('GitHub access token: ')
     git = Github(access_token)
     repo_name = 'CP-code-vault'
     try:
