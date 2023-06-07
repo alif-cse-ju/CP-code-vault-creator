@@ -59,9 +59,11 @@ def get_solutions(username):
             'link': info['link'],
             'solution': code,
         }
-        
 
 def atcoder_uploader(atcoder_username, repo):
+    ac_submission_cnt = 0
     for solution in get_solutions(atcoder_username):
+        ac_submission_cnt += 1
         upload_solution_type1('AtCoder', solution, repo)
-        
+
+    return ac_submission_cnt
