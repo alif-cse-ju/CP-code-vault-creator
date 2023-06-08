@@ -1,0 +1,6 @@
+PyGithub
+requests
+beautifulsoup4
+lxml
+selenium
+webdriver_manager
