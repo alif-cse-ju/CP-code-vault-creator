@@ -1,15 +1,17 @@
 from github import Github
 from github.GithubException import UnknownObjectException
-from Scrapers import (AtCoder, Codeforces)
+from Scrapers import (AtCoder, Codeforces, CodeChef)
 
 
 def main():
-    atcoder_username = input('AtCoder Username: ')         # alif_cse_ju
-    codeforces_username = input('Codeforces Username: ')   # alif_cse_ju
+    atcoder_username = ''          # alif_cse_ju
+    codeforces_username = ''       # alif_cse_ju
+    codeforces_password = ''
+    codechef_username = ''         # alif_cse_ju
 
 
     # Accessing github repository
-    access_token = input('GitHub access token: ')
+    access_token = ''
     git = Github(access_token)
     repo_name = 'CP-code-vault'
     try:
@@ -21,10 +23,15 @@ def main():
 
     # Executing scrapers
     if(atcoder_username):
-        AtCoder.atcoder_uploader(atcoder_username, repo)
-
+        ac_submission_cnt = AtCoder.atcoder_uploader(atcoder_username, repo)
+        print('Problem uploaded from AtCoder = ') + ac_submission_cnt
+ 
     if(codeforces_username):
-        Codeforces.codeforces_uploader(codeforces_username, repo)
+        ac_submission_cnt = Codeforces.codeforces_uploader(codeforces_username, codeforces_password, repo)
+        print('Problem uploaded from Codeforces = ' + str(ac_submission_cnt))
+
+    if(codechef_username):
+        CodeChef.codechef_uploader(codechef_username, repo)
  
 
 

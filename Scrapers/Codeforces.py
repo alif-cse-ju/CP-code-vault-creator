@@ -49,6 +49,8 @@ def find_contest_base(contest_name):
         contest_base = "Codeforces Round"
     elif contest_base == "Educational":
         contest_base = "Educational Round"
+    elif contest_base == "CodeTON":
+        contest_base = "CodeTON Round"
     elif contest_base == "Technocup":
         contest_base = "Technocup"
     else:
@@ -70,10 +72,7 @@ def codeforces_uploader(codeforces_username, codeforces_password, repo):
     driver.get(f"https://codeforces.com/submissions/{codeforces_username}")
     page_numbers = driver.find_elements_by_css_selector('span.page-index')
 
-    for i in range(8, int(page_numbers[-1].text)+1):
-
-
-        print("---> " + str(i))
+    for i in range(1, int(page_numbers[-1].text)+1):
 
         driver.get(f"https://codeforces.com/submissions/{codeforces_username}/page/{i}")
         time.sleep(1)
@@ -160,5 +159,7 @@ def codeforces_uploader(codeforces_username, codeforces_password, repo):
             ii += 1
             ac_submission_cnt += 1
             time.sleep(1)
+
+        print("Page (" + str(i) + ") done")
 
     return ac_submission_cnt
