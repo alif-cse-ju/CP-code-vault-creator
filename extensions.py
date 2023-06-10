@@ -37,5 +37,12 @@ EXTENSIONS = {
     "JavaScript": "js",
     "Node.js": "js",
     "Q#": "qs",
+
+    # For CodeChef
+    "C++14": "cpp",
+    "C++17": "cpp",
     "BF": "bf",
+    "KTLN": "kt",
+    "PYTH 3.6": "py",
+    "TEXT": "txt",
 }

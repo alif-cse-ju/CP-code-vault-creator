@@ -31,7 +31,8 @@ def main():
         print('Problem uploaded from Codeforces = ' + str(ac_submission_cnt))
 
     if(codechef_username):
-        CodeChef.codechef_uploader(codechef_username, repo)
+        ac_submission_cnt = CodeChef.codechef_uploader(codechef_username, repo)
+        print('Problem uploaded from Codechef = ' + str(ac_submission_cnt))
  
 
 
