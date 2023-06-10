@@ -42,7 +42,6 @@ def get_submission_links(driver):
 
             if has_accepted or contains_1_pts:
                 element = row.find_element_by_css_selector('td.centered a.centered')
-                print(element.get_attribute("href"))
                 submission_links.append(element.get_attribute("href"))
         
         page_num = driver.find_element(By.CSS_SELECTOR, ".pageinfo").text
