@@ -1,82 +1,110 @@
 import os
 import sys
-import json
-import requests
-from bs4 import BeautifulSoup
+import time
+import logging
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
+from extensions import EXTENSIONS
 from UploadToGitHub import upload_to_github
 
-async def scrape_codechef(problem):
-    try:
-        solutionPage = await requests.get(problem.url)
-        searchString = "var meta_info = "
-        soup = BeautifulSoup(solutionPage.text, 'html.parser')
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
-        html = solutionPage.text.split("\n")
 
-        for line in html:
-            for j in range(min(len(line), 5)):
-                if line[j:j + len(searchString)] == searchString:
-                    metaDataText = line[j + len(searchString):-1]
-                    obj = json.loads(metaDataText)
-                    problem['solution'] = obj['data']['plaintext']
-                    problem['file_extension'] = 'txt'
-                    problem['is_ac'] = False
-                    if 'languageExtension' in obj['data'] and len(obj['data']['languageExtension']) > 0:
-                        problem['file_extension'] = obj['data']['languageExtension']
-                    if 'solutionResult' in obj['data'] and obj['data']['solutionResult'] == 'AC':
-                        problem['is_ac'] = True
-                    return
+def handle_profile_page(codechef_username):
+    driver = webdriver.Chrome()
+    driver.implicitly_wait(40)
 
-    except Exception as error:
-        print(f"[error in scraping {problem.url} from codechef]\t{error}")
+    # Profile page handle
+    driver.get(f"https://www.codechef.com/users/{codechef_username}")
+    time.sleep(3)
+
+    return driver
+
+
+def get_submission_links(driver):
+    number_of_pages = int(driver.find_element_by_class_name("pageinfo").text.split()[-1])
+
+    submission_links = []
+
+    while True:
+        links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/viewsolution']")
+        for link in links:
+            if 'accepted' in link.get_attribute('title'):
+                submission_links.append(link.get_attribute("href"))
+        
+        page_num = driver.find_element(By.CSS_SELECTOR, ".pageinfo").text
+        
+        if page_num==f'{number_of_pages} of {number_of_pages}':
+            break
+        
+        btn = driver.find_element(By.XPATH, "//td/a[@onclick=\"onload_getpage_recent_activity_user('next');\"]")
+        driver.execute_script("arguments[0].click();", btn)
+        time.sleep(3)
+
+    return submission_links
+
 
 
 def codechef_uploader(codechef_username, repo):
-    try:
-        solutionPage = requests.get(f"https://www.codechef.com/users/{codechef_username}")
-        soup = BeautifulSoup(solutionPage.text, 'html.parser')
+    ac_submission_cnt = 0
+    
+    driver = handle_profile_page(codechef_username)
+    submission_links = get_submission_links(driver)
 
-        submissions = []
+    links = submission_links[0]
+    for i in range(1, len(submission_links)):
+        links += ',' + submission_links[i]
 
-        for h5 in soup.find_all('h5'):
-            if h5.text.startswith('Fully Solved'):
-                for link in h5.find_next('article').find_all('a'):
-                    submissions.append("https://www.codechef.com" + link['href'])
-                break
+    with open("codechef_links.txt", "w") as f:
+        f.write(links)
+        f.close()
 
-        for url in submissions:
-            statusPage = requests.get(url)
-            soup = BeautifulSoup(statusPage.text, 'html.parser')
+    submission_links = []
+    with open("codechef_links.txt", "r") as f:
+        submission_links = list(f.read().split(','))
+        f.close()
 
-            arr = url.split('/')
-            isPractice = False
-            for i in range(1, len(arr)):
-                if arr[i] == 'status' and arr[i - 1].endswith('codechef.com'):
-                    isPractice = True
-                    break
+    i = 0
 
-            contestName = "Practice" if isPractice else soup.select("#breadcrumb > div:nth-child(3)")[0].text
-            
-            ### here comes the error
+    while i < len(submission_links):
+        submission_link = submission_links[i]
+        driver.get(submission_link)
+        time.sleep(5)
 
-            problemName = soup.select("#breadcrumb > div:nth-child(3)")[0].text if isPractice else soup.select("#breadcrumb > div:nth-child(4)")[0].text
+        # verdict = driver.find_element_by_css_selector("div._status_container_1gitb_99 span").text
+        
+        solution_code = driver.find_element(By.CSS_SELECTOR, '.ace_content')
+        solution_code = solution_code.text
+        if len(solution_code) == 0:
+            print("got one bad")
+            continue
+        
+        elements = driver.find_elements_by_xpath("//a[contains(@class, '_link_1gitb_44')]")
 
+        # Extract the text from the elements
+        problem_id = elements[0].text.strip()
+        contest_id = elements[1].text.strip()
 
-            for a in soup.select("div.tablebox-section.l-float a"):
-                link = a['href']
-                if link.startswith("/viewsolution/"):
-                    problem = {}
-                    problem['url'] = "https://www.codechef.com" + link
-                    problem['name'] = problemName
-                    problem['contest_name'] = 'Codechef - ' + contestName
-                    scrape_codechef(problem)
-                    if problem['is_ac'] == True:
-                        upload_to_github('CodeChef', problem, repo)
+        language = driver.find_element_by_class_name("_ideLanguageName_1jy8z_268").text
+        language = language[language.index(":")+1:].strip()
+        
+        name = driver.find_element_by_class_name("_problem_title_1gitb_58").text
+        solution_id = submission_link[-8:]
 
-    except Exception as error:
-        print(error)
+        try:
+            path = f'CodeChef/{contest_id}/{problem_id} - {name}/{solution_id}.{EXTENSIONS[language]}'
+            upload_to_github(repo, path, solution_code)
+
+        except Exception as e:
+            logging.error(f'{e} for {i}')
+            continue
+        
+        print(f"done: {i}")
+        i += 1
+        ac_submission_cnt += 1
+
+    return ac_submission_cnt

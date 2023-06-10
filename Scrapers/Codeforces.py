@@ -13,9 +13,6 @@ from UploadToGitHub import upload_to_github
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-chromedriver_path = "E:\\319_Alif(27)\\CP\\CP-code-vault-creator\\chromedriver_win32"
-os.environ['PATH'] += chromedriver_path
-
 
 
 def handle_login(codeforces_username, codeforces_password):
@@ -137,20 +134,14 @@ def codeforces_uploader(codeforces_username, codeforces_password, repo):
             for c in "\/:*?\"<>|": # folder name can't have these character
                 name = name.replace(c, '-')
 
-            solution = {}
-            solution['contest_name'] = contest_name
-            solution['name'] = name
-            solution['solution_id'] = solution_id
-            solution['solution'] = solution_code
-            solution['file_extension'] = EXTENSIONS[language]
-
             try:
                 contest_base = find_contest_base(contest_name)
-                path = f'Codeforces/{contest_base}/{solution["contest_name"]}/{solution["name"]}/{solution["solution_id"]}.{solution["file_extension"]}'
-                upload_to_github(repo, path, solution['solution'])
+                path = f'Codeforces/{contest_base}/{contest_name}/{name}/{solution_id}.{EXTENSIONS[language]}'
+                upload_to_github(repo, path, solution_code)
 
             except Exception as e:
-                logging.error(f'{e} for {solution}')
+                logging.error(f'{e} for {solution_id}')
+                continue
             
             close = driver.find_element(By.CSS_SELECTOR, ".close")
             close.click()
@@ -161,5 +152,5 @@ def codeforces_uploader(codeforces_username, codeforces_password, repo):
             time.sleep(1)
 
         print("Page (" + str(i) + ") done")
-
+        
     return ac_submission_cnt
