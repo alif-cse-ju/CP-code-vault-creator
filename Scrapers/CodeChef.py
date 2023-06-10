@@ -31,10 +31,19 @@ def get_submission_links(driver):
     submission_links = []
 
     while True:
-        table_body = driver.find_element_by_xpath('//table[@class="dataTable"]/tbody')
-        accepted_rows = table_body.find_elements_by_xpath('.//tr[td[@title="accepted"]]')
-        for row in accepted_rows:
-            submission_links.append(row.get_attribute("href"))
+        rows = driver.find_elements_by_xpath("//table[@class='dataTable']/tbody/tr")
+
+        for row in rows:
+            spans = row.find_elements_by_xpath(".//span")
+            has_accepted = any(span.get_attribute("title") == "accepted" for span in spans)
+            
+            td_elements = row.find_elements_by_tag_name('td')
+            contains_1_pts = any("1 pts" in td_element.get_attribute('title') for td_element in td_elements)
+
+            if has_accepted or contains_1_pts:
+                element = row.find_element_by_css_selector('td.centered a.centered')
+                print(element.get_attribute("href"))
+                submission_links.append(element.get_attribute("href"))
         
         page_num = driver.find_element(By.CSS_SELECTOR, ".pageinfo").text
         
@@ -43,7 +52,7 @@ def get_submission_links(driver):
         
         btn = driver.find_element(By.XPATH, "//td/a[@onclick=\"onload_getpage_recent_activity_user('next');\"]")
         driver.execute_script("arguments[0].click();", btn)
-        time.sleep(3)
+        time.sleep(2)
 
     return submission_links
 
