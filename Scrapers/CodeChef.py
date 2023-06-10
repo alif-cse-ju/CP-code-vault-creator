@@ -31,10 +31,10 @@ def get_submission_links(driver):
     submission_links = []
 
     while True:
-        links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/viewsolution']")
-        for link in links:
-            if 'accepted' in link.get_attribute('title'):
-                submission_links.append(link.get_attribute("href"))
+        table_body = driver.find_element_by_xpath('//table[@class="dataTable"]/tbody')
+        accepted_rows = table_body.find_elements_by_xpath('.//tr[td[@title="accepted"]]')
+        for row in accepted_rows:
+            submission_links.append(row.get_attribute("href"))
         
         page_num = driver.find_element(By.CSS_SELECTOR, ".pageinfo").text
         
