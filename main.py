@@ -10,8 +10,15 @@ def main():
     codechef_username = ''         # alif_cse_ju
 
 
-    # Accessing github repository
+    
     access_token = ''
+
+
+
+
+    # Don't touch these parts
+
+    # Accessing github repository
     git = Github(access_token)
     repo_name = 'CP-code-vault'
     try:

@@ -43,6 +43,6 @@ EXTENSIONS = {
     "C++17": "cpp",
     "BF": "bf",
     "KTLN": "kt",
-    "PYTH 3.6": "py",
+    "PYTH 3": "py",
     "TEXT": "txt",
 }
