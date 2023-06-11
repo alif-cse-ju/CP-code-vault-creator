@@ -18,9 +18,15 @@ def handle_profile_page(codechef_username):
     driver = webdriver.Chrome()
     driver.implicitly_wait(40)
 
+    # Login Page handle
+    driver.get("https://www.codechef.com/login?destination=/")
+    time.sleep(30)
+
+    # ***** You need to login manually here *****
+
     # Profile page handle
     driver.get(f"https://www.codechef.com/users/{codechef_username}")
-    time.sleep(3)
+    time.sleep(5)
 
     return driver
 
@@ -82,8 +88,6 @@ def codechef_uploader(codechef_username, repo):
         submission_link = submission_links[i]
         driver.get(submission_link)
         time.sleep(5)
-
-        # verdict = driver.find_element_by_css_selector("div._status_container_1gitb_99 span").text
         
         solution_code = driver.find_element(By.CSS_SELECTOR, '.ace_content')
         solution_code = solution_code.text
